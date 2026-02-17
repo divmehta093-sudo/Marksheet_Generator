@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Marksheet App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Include Chart.js for the bar chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg-color: #f4f7f9;
+        --text-color: #2c3e50;
+        --card-bg: #fff;
+        --shadow-color: rgba(0,0,0,0.1);
+        --border-color: #dee2e6;
+        --hover-shadow: rgba(0,0,0,0.2);
+        --chart-grid: rgba(0,0,0,0.1);
+      }
+
+      body {
+        background-color: var(--bg-color);
+        font-family: 'Segoe UI', sans-serif;
+        color: var(--text-color);
+      }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/">Marksheet-Generator</a>
+          <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+              <!-- Teacher-specific links -->
+              <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+                <a class="nav-link" th:href="@{/teacher/addMarksheet}">Add Marksheet</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" th:href="@{/marksheets}">View All</a>
+              </li>
+              <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+                <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
+              </li>
+              <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+                <a class="nav-link" th:href="@{/teacher/logout}" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+    </nav>
+      
+    <div class="container my-5">
+        <h1 class="text-center mb-5">Dashboard</h1>
+        
+        <!-- Metrics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card card-metric bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Students</h5>
+                        <p class="card-text" th:text="${stats['totalStudents'] ?: 0}">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card card-metric bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Top Performer</h5>
+                        <p class="card-text" th:text="${stats['topPerformer'] ?: 'N/A'}">N/A</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card card-metric bg-danger text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Lowest Performer</h5>
+                        <p class="card-text" th:text="${stats['lowestPerformer'] ?: 'N/A'}">N/A</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card card-metric bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Pass Percentage</h5>
+                        <p class="card-text" th:text="${stats['passPercentage'] ?: 0} + '%'">0%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card card-metric bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Fail Percentage</h5>
+                        <p class="card-text" th:text="${stats['failPercentage'] ?: 0} + '%'">0%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Grade Distribution Bar Chart for Specific Class -->
+        <div class="chart-container mb-4">
+            <canvas id="gradeBarChart"></canvas>
+        </div>
+        
+        <!-- Recent Marksheets Table -->
+        <div class="mb-4">
+          <h3>Recent Marksheets</h3>
+          <table class="table table-bordered table-striped">
+              <thead class="table-dark">
+                  <tr>
+                      <th>Student Name</th>
+                      <th>Roll Number</th>
+                      <th>Total</th>
+                      <th>Grade</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr th:each="ms : ${stats['recentMarksheets']}">
+                      <td th:text="${ms.studentName}">Student Name</td>
+                      <td th:text="${ms.rollNumber}">Roll Number</td>
+                      <td th:text="${ms.total}">Total</td>
+                      <td th:text="${ms.grade}">Grade</td>
+                  </tr>
+              </tbody>
+          </table>
+        </div>
+    </div>
+    
+    <footer class="bg-dark text-white py-3">
+      <div class="container text-center">
+        <p>&copy; 2025 Marksheet Generator. All rights reserved.</p>
+      </div>
+    </footer>
+    
+    <!-- Script for the Grade Distribution Bar Chart -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var gradeData = [
+            { grade: 'A+', count: parseInt([[${stats['gradeA+']}]] || 0) },
+            { grade: 'A', count: parseInt([[${stats['gradeA']}]] || 0) },
+            { grade: 'B+', count: parseInt([[${stats['gradeB+']}]] || 0) },
+            { grade: 'B', count: parseInt([[${stats['gradeB']}]] || 0) },
+            { grade: 'C', count: parseInt([[${stats['gradeC']}]] || 0) },
+            { grade: 'D', count: parseInt([[${stats['gradeD']}]] || 0) },
+            { grade: 'F', count: parseInt([[${stats['gradeF']}]] || 0) }
+        ];
+        
+        var gradeLabels = gradeData.map(item => item.grade);
+        var gradeCounts = gradeData.map(item => item.count);
+        
+        const gradeBarCtx = document.getElementById('gradeBarChart').getContext('2d');
+        const gradeBarChart = new Chart(gradeBarCtx, {
+            type: 'bar',
+            data: {
+                labels: gradeLabels,
+                datasets: [{
+                    label: 'Number of Students',
+                    data: gradeCounts,
+                    backgroundColor: gradeLabels.map((_, index) => {
+                        const hue = (index * 360 / gradeLabels.length) % 360;
+                        return `hsla(${hue}, 70%, 60%, 0.7)`;
+                    }),
+                    borderColor: gradeLabels.map((_, index) => {
+                        const hue = (index * 360 / gradeLabels.length) % 360;
+                        return `hsla(${hue}, 70%, 60%, 1)`;
+                    }),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { 
+                            stepSize: 1,
+                            color: '#2c3e50'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#2c3e50'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { 
+                        display: false 
+                    },
+                    title: { 
+                        display: true, 
+                        text: 'Grade Distribution',
+                        color: '#2c3e50',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+        /*]]>*/
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            
+            // Update chart colors based on theme
+            const isDark = newTheme === 'dark';
+            gradeBarChart.data.datasets[0].backgroundColor = isDark ? [
+                'rgba(75, 192, 192, 0.9)',
+                'rgba(54, 162, 235, 0.9)',
+                'rgba(255, 206, 86, 0.9)',
+                'rgba(255, 99, 132, 0.9)'
+            ] : [
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(255, 99, 132, 0.7)'
+            ];
+            gradeBarChart.update();
+
+            // Update toggle button icon
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+        }
+    </script>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
+          <div class="modal-header border-0">
+            <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to logout from your account?
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <a th:href="@{/teacher/logout}" class="btn btn-danger">Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .modal-content {
+        border: none;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+      }
+      
+      body.dark-mode .modal-content {
+        background: rgba(40, 40, 40, 0.9) !important;
+        color: #e1e1e1;
+      }
+      
+      .modal.fade .modal-dialog {
+        transition: transform 0.3s ease-out;
+      }
+      
+      .modal.fade .modal-dialog {
+        transform: scale(0.95);
+      }
+      
+      .modal.show .modal-dialog {
+        transform: scale(1);
+      }
+    </style>
+</body>
+</html>

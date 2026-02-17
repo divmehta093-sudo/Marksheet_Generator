@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+  <meta charset="UTF-8">
+  <title>University Marksheet</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/css/custom.css" rel="stylesheet">
+  <!-- Include jsPDF and html2canvas libraries for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Logout Modal with modern styling -->
+  <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
+        <div class="modal-header border-0">
+          <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to logout from your account?
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <a sec:authorize="hasRole('TEACHER')" th:href="@{/teacher/logout}" class="btn btn-danger">Logout</a>
+          <a sec:authorize="!hasRole('TEACHER')" th:href="@{/logout}" class="btn btn-danger">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <style>
+    /* Main card styling */
+    .marksheet-container {
+      background: #fff;
+      border: none;
+      padding: 40px;
+      border-radius: 15px;
+      position: relative;
+      margin: 30px auto 40px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .marksheet-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .marksheet-header h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #1a1a1a;
+      letter-spacing: -0.5px;
+    }
+    
+    .marksheet-header h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: #444;
+      margin-bottom: 5px;
+    }
+    
+    .marksheet-header .line {
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #007bff, #00bcd4);
+      margin: 20px 0 30px;
+      border-radius: 2px;
+    }
+    
+    .candidate-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+    }
+    
+    .candidate-info p {
+      font-size: 1.1rem;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .subjects-table {
+      margin: 25px 0;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .subjects-table th {
+      background: linear-gradient(45deg, #007bff, #00bcd4);
+      color: white;
+      padding: 15px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .subjects-table td {
+      padding: 12px 15px;
+      border: 1px solid #e0e0e0;
+      transition: background-color 0.2s ease;
+    }
+    
+    .subjects-table tr:hover td {
+      background-color: #f8f9fa;
+    }
+    
+    .btn-secondary, .btn-primary {
+      padding: 12px 25px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .marksheet-footer-note {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      text-align: center;
+      font-style: italic;
+      color: #666;
+    }
+    
+    /* Dark mode enhancements */
+    body.dark-mode .marksheet-container {
+      background: #2d2d2d;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    body.dark-mode .candidate-info,
+    body.dark-mode .marksheet-footer-note {
+      background: #363636;
+      color: #e0e0e0;
+    }
+    
+    body.dark-mode .subjects-table td {
+      border-color: #404040;
+      color: #e0e0e0;
+    }
+    
+    body.dark-mode .subjects-table tr:hover td {
+      background-color: #404040;
+    }
+    .marksheet-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .marksheet-header h1 {
+      font-family: "Georgia", serif;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-size: 1.8rem;
+    }
+    .marksheet-header h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0;
+      color: #555;
+    }
+    .marksheet-header .line {
+      width: 100%;
+      height: 2px;
+      margin: 15px 0 25px;
+    }
+    /* Candidate details */
+    .candidate-info {
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+    .candidate-info p {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    /* Subjects table */
+    .subjects-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .subjects-table th,
+    .subjects-table td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      font-size: 0.95rem;
+    }
+    .subjects-table th {
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .subjects-table caption {
+      caption-side: top;
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    /* Footer note */
+    .marksheet-footer-note {
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    /* Dark Mode Overrides for other elements remain */
+    body.dark-mode .navbar {
+      background-color: #212529 !important;
+    }
+    body.dark-mode .marksheet-header h1,
+    body.dark-mode .marksheet-header h2 {
+      color: #f8f9fa;
+    }
+    body.dark-mode .line {
+      background: #999;
+    }
+    body.dark-mode .subjects-table th {
+      background: #444;
+      color: #f8f9fa;
+    }
+    body.dark-mode .subjects-table td {
+      border-color: #555;
+    }
+    body.dark-mode .marksheet-footer-note {
+      border-top: 1px solid #555;
+      color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Marksheet-Generator</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <!-- Teacher-specific navigation -->
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" href="/teacher/addMarksheet">Add Marksheet</a>
+          </li>
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" href="/marksheets">View All</a>
+          </li>
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" href="/dashboard">Dashboard</a>
+          </li>
+          <!-- Logout -->
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
+          </li>
+          <li class="nav-item" sec:authorize="hasRole('STUDENT')">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
+          </li>
+          <!-- Dark Mode toggle for teachers only -->
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <button id="themeToggle" class="btn btn-link nav-link">Dark Mode</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Marksheet Content -->
+  <div class="container mt-4">
+    <!-- Add helper class "no-dark-mode" to the marksheet container -->
+    <div class="marksheet-container no-dark-mode" id="marksheetContent">
+      <!-- Header Section -->
+      <div class="marksheet-header">
+        <h1>XYZ University</h1>
+        <h2>Statement of Marks</h2>
+        <div class="line"></div>
+      </div>
+      <!-- Candidate Info -->
+      <div class="candidate-info">
+        <p><strong>Candidate's Name:</strong> <span th:text="${marksheet.studentName}"></span></p>
+        <p><strong>Roll Number:</strong> <span th:text="${marksheet.rollNumber}"></span></p>
+        <p><strong>Class:</strong> <span th:text="${marksheet.className}"></span></p>
+        <p><strong>Date of Birth:</strong> <span th:text="${marksheet.dob}"></span></p>
+      </div>
+      <hr />
+      <!-- Subjects Section -->
+      <div th:if="${marksheet.className == '10th'}">
+        <table class="subjects-table">
+          <caption>10th Class Subjects</caption>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Marks Obtained</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Math</td>
+              <td th:text="${marksheet.math}">0</td>
+            </tr>
+            <tr>
+              <td>Science</td>
+              <td th:text="${marksheet.science}">0</td>
+            </tr>
+            <tr>
+              <td>English</td>
+              <td th:text="${marksheet.english}">0</td>
+            </tr>
+            <tr>
+              <td>Hindi</td>
+              <td th:text="${marksheet.hindi}">0</td>
+            </tr>
+            <tr>
+              <td>Marathi</td>
+              <td th:text="${marksheet.marathi}">0</td>
+            </tr>
+            <tr>
+              <td>History</td>
+              <td th:text="${marksheet.history}">0</td>
+            </tr>
+            <tr>
+              <td>Geography</td>
+              <td th:text="${marksheet.geography}">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${marksheet.className == '11th' or marksheet.className == '12th'}">
+        <table class="subjects-table">
+          <caption th:text="${marksheet.className + ' Class Subjects (' + marksheet.stream + ')'}"></caption>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Marks Obtained</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Common Subject: English for all streams -->
+            <tr>
+              <td>English</td>
+              <td th:text="${marksheet.english}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Science'}">
+              <td>Math</td>
+              <td th:text="${marksheet.math}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Science'}">
+              <td>Physics</td>
+              <td th:text="${marksheet.physics}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Science'}">
+              <td>Chemistry</td>
+              <td th:text="${marksheet.chemistry}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Science'}">
+              <td>Biology</td>
+              <td th:text="${marksheet.biology}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Commerce'}">
+              <td>Math</td>
+              <td th:text="${marksheet.math}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Commerce'}">
+              <td>Economics</td>
+              <td th:text="${marksheet.economics}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Commerce'}">
+              <td>Business Studies</td>
+              <td th:text="${marksheet.businessStudies}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Commerce'}">
+              <td>Accountancy</td>
+              <td th:text="${marksheet.accountancy}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Arts'}">
+              <td>History</td>
+              <td th:text="${marksheet.history}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Arts'}">
+              <td>Political Science</td>
+              <td th:text="${marksheet.politicalScience}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Arts'}">
+              <td>Sociology</td>
+              <td th:text="${marksheet.sociology}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream=='Arts'}">
+              <td>Geography</td>
+              <td th:text="${marksheet.geography}">0</td>
+            </tr>
+            <tr th:if="${marksheet.stream!='Science' and marksheet.stream!='Commerce' and marksheet.stream!='Arts'}">
+              <td colspan="2">Stream not specified.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Summary Section -->
+      <hr />
+      <div class="candidate-info">
+        <p><strong>Total:</strong> <span th:text="${marksheet.total}"></span></p>
+        <p><strong>Percentage:</strong> <span
+            th:text="${T(java.lang.String).format('%.2f', marksheet.percentage) + '%'}"></span></p>
+        <p><strong>Grade:</strong> <span th:text="${marksheet.grade}"></span></p>
+      </div>
+
+      <div class="marksheet-footer-note">
+        <p>This is an official statement of marks issued by XYZ University</p>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <button class="btn btn-secondary me-2" onclick="downloadPDF()">Download PDF</button>
+      <span sec:authorize="hasRole('TEACHER')">
+        <a th:href="@{/teacher/addMarksheet}" class="btn btn-primary">Generate Another</a>
+      </span>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container text-center">
+      <p>&copy; 2025 Marksheet Generator. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript for generating PDF using html2canvas and jsPDF -->
+  <script>
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'pt', 'a4');
+      html2canvas(document.getElementById("marksheetContent"), { scale: 2 }).then(function (canvas) {
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth() - 80;
+        const imgWidth = pdfWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        const startY = 60;
+        doc.addImage(imgData, 'PNG', 40, startY, imgWidth, imgHeight);
+        doc.save("marksheet.pdf");
+      });
+    }
+  </script>
+
+  <!-- Dark Mode Script (Teacher-specific only) -->
+  <script th:inline="javascript">
+    var teacherUsername = /*[[${#authorization.expression('hasRole("TEACHER")') ? #authentication.name : ""}]]*/ "";
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (teacherUsername !== "") {
+        var darkModeKey = "darkMode_" + teacherUsername;
+        if (localStorage.getItem(darkModeKey) === "enabled") {
+          document.body.classList.add("dark-mode");
+          document.querySelectorAll(".navbar").forEach(function (navbar) {
+            navbar.classList.add("dark-mode");
+          });
+          document.getElementById("themeToggle").textContent = "Light Mode";
+        } else {
+          document.getElementById("themeToggle").textContent = "Dark Mode";
+        }
+      }
+    });
+    if (teacherUsername !== "") {
+      document.getElementById("themeToggle").addEventListener("click", function () {
+        var darkModeKey = "darkMode_" + teacherUsername;
+        if (document.body.classList.contains("dark-mode")) {
+          document.body.classList.remove("dark-mode");
+          document.querySelectorAll(".navbar").forEach(function (navbar) {
+            navbar.classList.remove("dark-mode");
+          });
+          localStorage.setItem(darkModeKey, "disabled");
+          this.textContent = "Dark Mode";
+        } else {
+          document.body.classList.add("dark-mode");
+          document.querySelectorAll(".navbar").forEach(function (navbar) {
+            navbar.classList.add("dark-mode");
+          });
+          localStorage.setItem(darkModeKey, "enabled");
+          this.textContent = "Light Mode";
+        }
+      });
+    }
+  </script>
+
+  <!-- jQuery for stream subjects dynamic rendering -->
+  <script>
+    $(document).ready(function () {
+      $('#streamSelect').change(function () {
+        var stream = $(this).val();
+        var subjectsHtml = '';
+        if (stream === 'Science') {
+          subjectsHtml += '<div class="row mb-3">';
+          subjectsHtml += '<div class="col"><label class="form-label">Physics</label><input type="number" class="form-control" name="physics" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Chemistry</label><input type="number" class="form-control" name="chemistry" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Mathematics</label><input type="number" class="form-control" name="math" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Biology</label><input type="number" class="form-control" name="biology" required></div>';
+          subjectsHtml += '</div>';
+        } else if (stream === 'Commerce') {
+          subjectsHtml += '<div class="row mb-3">';
+          subjectsHtml += '<div class="col"><label class="form-label">Economics</label><input type="number" class="form-control" name="economics" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Business Studies</label><input type="number" class="form-control" name="businessStudies" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Accountancy</label><input type="number" class="form-control" name="accountancy" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Mathematics</label><input type="number" class="form-control" name="math" required></div>';
+          subjectsHtml += '</div>';
+        } else if (stream === 'Arts') {
+          subjectsHtml += '<div class="row mb-3">';
+          subjectsHtml += '<div class="col"><label class="form-label">History</label><input type="number" class="form-control" name="history" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Political Science</label><input type="number" class="form-control" name="politicalScience" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Sociology</label><input type="number" class="form-control" name="sociology" required></div>';
+          subjectsHtml += '<div class="col"><label class="form-label">Geography</label><input type="number" class="form-control" name="geography" required></div>';
+          subjectsHtml += '</div>';
+        }
+        $('#streamSubjects').html(subjectsHtml);
+      });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    /* Modern Modal Styling */
+    .modal-content {
+      border: none;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+    }
+    
+    body.dark-mode .modal-content {
+      background: rgba(40, 40, 40, 0.9) !important;
+      color: #e1e1e1;
+    }
+    .modal.fade .modal-dialog {
+      transition: transform 0.3s ease-out;
+    }
+    .modal.fade .modal-dialog {
+      transform: scale(0.95);
+    }
+    .modal.show .modal-dialog {
+      transform: scale(1);
+    }
+  </style>
+</body>
+
+</html>

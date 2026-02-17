@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Selection - Marksheet Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(-45deg, #74ebd5, #ACB6E5, #86A8E7, #91EAE4);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .login-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .login-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .login-card h1 {
+      font-size: 2.2rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2d3436;
+      letter-spacing: -0.5px;
+    }
+
+    .login-card p {
+      font-size: 1.1rem;
+      color: #636e72;
+      margin-bottom: 30px;
+      font-weight: 400;
+    }
+
+    .btn-custom {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .btn-custom.btn-primary {
+      background: linear-gradient(45deg, #4834d4, #686de0);
+      box-shadow: 0 4px 15px rgba(104, 109, 224, 0.3);
+    }
+
+    .btn-custom.btn-secondary {
+      background: linear-gradient(45deg, #2d3436, #636e72);
+      box-shadow: 0 4px 15px rgba(45, 52, 54, 0.3);
+    }
+
+    .btn-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-custom:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Welcome to Marksheet Generator</h1>
+    <p>Select your login type:</p>
+    <a href="/student/login" class="btn btn-primary btn-custom">Student Login</a>
+    <a href="/teacher/login" class="btn btn-secondary btn-custom">Teacher Login</a>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

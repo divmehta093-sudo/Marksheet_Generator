@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>All Marksheets</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+  <link href="/css/custom.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" th:href="@{/}">Marksheet-Generator</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <!-- Teacher-specific navigation -->
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" th:href="@{/teacher/addMarksheet}">Add Marksheet</a>
+          </li>
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link active" th:href="@{/teacher/marksheets}">View All</a>
+          </li>
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
+          </li>
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
+          </li>
+          <!-- For non-teacher users -->
+          <li class="nav-item" sec:authorize="!hasRole('TEACHER')">
+            <a class="nav-link" th:href="@{/}">Add Marksheet</a>
+          </li>
+          <li class="nav-item" sec:authorize="!hasRole('TEACHER')">
+            <a class="nav-link" th:href="@{/marksheets}">View All</a>
+          </li>
+          <li class="nav-item" sec:authorize="!hasRole('TEACHER')">
+            <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
+          </li>
+          <li class="nav-item" sec:authorize="!hasRole('TEACHER')">
+            <a class="nav-link" href="/logout"
+                   onclick="return confirm('Are you sure you want to logout?');">Logout</a>
+          </li>
+          <!-- Dark mode toggle shown only for teachers -->
+          <li class="nav-item" sec:authorize="hasRole('TEACHER')">
+            <button id="themeToggle" class="btn btn-link nav-link p-2 d-flex align-items-center" style="margin: 0; border: none; height: 100%;">Dark Mode</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <style>
+    /* Modern Container Styling */
+    .container.mt-4 {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      margin-bottom: 3rem;
+    }
+  
+    /* Table Styling */
+    .table {
+      margin-bottom: 0;
+    }
+  
+    .table-striped > tbody > tr:nth-of-type(odd) {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+  
+    .table > tbody > tr {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+  
+    .table > tbody > tr:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      background-color: rgba(var(--bs-primary-rgb), 0.05);
+    }
+  
+    /* Search Form Styling */
+    .mb-4.d-flex {
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 1.5rem;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2rem !important;
+    }
+  
+    .form-control {
+      border-radius: 10px;
+      border: 2px solid rgba(0, 0, 0, 0.05);
+      padding: 0.75rem 1rem;
+      transition: all 0.3s ease;
+    }
+  
+    .form-control:focus {
+      box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.15);
+      border-color: var(--bs-primary);
+    }
+  
+    /* Button Styling */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+  
+    .btn-sm {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.875rem;
+    }
+  
+    /* Dark Mode Styles */
+    body.dark-mode {
+      background-color: #1a1a1a;
+      color: #e1e1e1;
+    }
+  
+    body.dark-mode .container.mt-4 {
+      background: rgba(40, 40, 40, 0.7);
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+  
+    body.dark-mode .mb-4.d-flex {
+      background: rgba(40, 40, 40, 0.9);
+    }
+  
+    body.dark-mode .form-control {
+      background-color: #2d2d2d;
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #e1e1e1;
+    }
+
+    body.dark-mode .form-control::placeholder {
+      color: #adb5bd;
+      opacity: 0.7;
+    }
+  
+    body.dark-mode .table {
+      color: #e1e1e1;
+    }
+  
+    body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  
+    body.dark-mode .table > tbody > tr:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  
+    /* Smooth Theme Transition */
+    body, .container, .form-control, .btn, .table, .navbar {
+      transition: all 0.3s ease;
+    }
+  </style>
+  <div class="container mt-4">
+    <h1 class="mb-4 text-center">All Generated Marksheets</h1>
+    <!-- Teacher-specific search form -->
+    <div sec:authorize="hasRole('TEACHER')">
+      <form method="get" action="/teacher/marksheets" class="mb-4 d-flex">
+        <input type="text" name="search" class="form-control me-2" placeholder="Search by name or roll number...">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a href="/marksheets/export" class="btn btn-success ms-2">Export to CSV</a>
+      </form>
+    </div>
+    <div sec:authorize="!hasRole('TEACHER')">
+      <form method="get" action="/marksheets" class="mb-4 d-flex">
+        <input type="text" name="search" class="form-control me-2" placeholder="Search by name or roll number...">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a href="/marksheets/export" class="btn btn-success ms-2">Export to CSV</a>
+      </form>
+    </div>
+    <table id="marksheetTable" class="table table-bordered table-striped">
+      <thead class="table-dark">
+        <tr>
+          <th>Student Name</th>
+          <th>Roll Number</th>
+          <th>Class</th>
+          <th>Date of Birth</th>
+          <!-- Removed Math, Science, English columns -->
+          <th>Total</th>
+          <th>Percentage</th>
+          <th>Grade</th>
+          <th style="width: 200px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="ms : ${marksheets}">
+          <td th:text="${ms.studentName}"></td>
+          <td th:text="${ms.rollNumber}"></td>
+          <td th:text="${ms.className}"></td>
+          <td th:text="${ms.dob}"></td>
+          <!-- Removed corresponding fields for Math, Science, English -->
+          <td th:text="${ms.total}"></td>
+          <td th:text="${T(java.lang.String).format('%.2f', ms.percentage)+ '%'}"></td>
+          <td th:text="${ms.grade}"></td>
+          <td>
+            <a th:href="@{/marksheets/view/{id}(id=${ms.id})}" class="btn btn-info btn-sm mb-1">View</a>
+            <a th:href="@{/marksheets/edit/{id}(id=${ms.id})}" class="btn btn-warning btn-sm mb-1">Edit</a>
+            <form th:action="@{/marksheets/delete/{id}(id=${ms.id})}" method="post" style="display:inline;">
+              <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Marksheet Generator. All rights reserved.</p>
+    </div>
+  </footer>
+  
+  <!-- jQuery and DataTables scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      // Initialize DataTables with search disabled (removing built-in search box)
+      $('#marksheetTable').DataTable({
+        searching: false
+      });
+    });
+  </script>
+  
+  <!-- Dark Mode Script (Teacher-specific only) -->
+  <script th:inline="javascript">
+    var teacherUsername = /*[[${#authorization.expression('hasRole("TEACHER")') ? #authentication.name : ""}]]*/ "";
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if(teacherUsername !== "") {
+        var darkModeKey = "darkMode_" + teacherUsername;
+        if (localStorage.getItem(darkModeKey) === "enabled") {
+          document.body.classList.add("dark-mode");
+          document.querySelectorAll(".navbar").forEach(function(navbar) {
+            navbar.classList.add("dark-mode");
+          });
+          document.getElementById("themeToggle").textContent = "Light Mode";
+        } else {
+          document.getElementById("themeToggle").textContent = "Dark Mode";
+        }
+      }
+    });
+    if(teacherUsername !== "") {
+      document.getElementById("themeToggle").addEventListener("click", function() {
+        var darkModeKey = "darkMode_" + teacherUsername;
+        if (document.body.classList.contains("dark-mode")) {
+          document.body.classList.remove("dark-mode");
+          document.querySelectorAll(".navbar").forEach(function(navbar) {
+            navbar.classList.remove("dark-mode");
+          });
+          localStorage.setItem(darkModeKey, "disabled");
+          this.textContent = "Dark Mode";
+        } else {
+          document.body.classList.add("dark-mode");
+          document.querySelectorAll(".navbar").forEach(function(navbar) {
+            navbar.classList.add("dark-mode");
+          });
+          localStorage.setItem(darkModeKey, "enabled");
+          this.textContent = "Light Mode";
+        }
+      });
+    }
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Logout Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to logout from your account?
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <a href="/teacher/logout" class="btn btn-danger">Logout</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-content {
+    border: none;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  }
+  
+  body.dark-mode .modal-content {
+    background: rgba(40, 40, 40, 0.9) !important;
+    color: #e1e1e1;
+  }
+  
+  .modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+  }
+  
+  .modal.fade .modal-dialog {
+    transform: scale(0.95);
+  }
+  
+  .modal.show .modal-dialog {
+    transform: scale(1);
+  }
+</style>
+</body>
+</html>
