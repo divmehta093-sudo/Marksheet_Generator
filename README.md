@@ -118,8 +118,8 @@ Teacher:
 
 ## Author
 
-Your Name
-GitHub: https://github.com/your-username
+Divya Mehta
+GitHub:https://github.com/divmehta093-sudo
 
 ---
 
