@@ -84,7 +84,7 @@ Frontend Templates:
 ### Step 1: Clone the repository
 
 ```bash id="step1"
-git clone https://github.com/your-username/marksheet-generator.git
+git clone https://github.com/divmehta093-sudo/Marksheet_Generator
 ```
 
 ### Step 2: Configure MongoDB
@@ -119,7 +119,7 @@ Teacher:
 ## Author
 
 Divya Mehta
-GitHub:https://github.com/divmehta093-sudo
+GitHub: https://github.com/divmehta093-sudo
 
 ---
 
